@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="單字積木">
 <meta name="theme-color" content="#0f1923">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-wl-192.png">
 <title>Word Lab 單字積木</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -370,6 +372,25 @@ function speak(text) {
 }
 
 // ═══════════════════════════════════════
+// BASE CHINESE LOOKUP
+// ═══════════════════════════════════════
+const BASE_CN = {
+  'teach':'教','sing':'唱','play':'玩','work':'工作','farm':'農耕',
+  'dance':'跳舞','drive':'駕駛','read':'閱讀','lead':'帶領','win':'贏',
+  'help':'幫助','use':'使用','beauty':'美麗','care':'關心','wonder':'驚奇',
+  'color':'顏色','thank':'感謝','power':'力量',
+  'slow':'慢的','quick':'快的','happy':'開心的','sad':'難過的','loud':'大聲的',
+  'final':'最後的','real':'真實的','usual':'平常的',
+  'rain':'雨','sun':'太陽','wind':'風','snow':'雪','cloud':'雲',
+  'dirt':'髒東西','luck':'運氣','hunger':'飢餓',
+  'act':'演出','educate':'教導','quest':'追尋','vacate':'空出',
+  'read':'閱讀','swim':'游泳','paint':'畫','build':'建造','feel':'感覺'
+};
+function getBaseChinese(w) {
+  return BASE_CN[w.base] || w.base;
+}
+
+// ═══════════════════════════════════════
 // QUIZ
 // ═══════════════════════════════════════
 function handleQuiz(wordKey, chosen, correct) {
@@ -437,7 +458,7 @@ function renderContent() {
     const s = w.split;
     const isActive = i === selectedWordIdx;
     return `<button class="word-chip${isActive?' active':''}" onclick="selectedWordIdx=${i};renderContent();renderProgress();">
-      <span class="chip-base">${s[0]}</span><span class="chip-suffix">${s[1]}</span>
+      <span style="color:var(--text)">${w.word}</span>
       <span class="chip-cn">${w.cn}</span>
     </button>`;
   }).join('')}</div>`;
@@ -449,25 +470,21 @@ function renderContent() {
     const wrongOpts = getDistractors(r, selectedWordIdx);
     const opts = shuffle([w.split[1], ...wrongOpts]);
 
+    // base word 的中文（從完整中文推導，或直接用 base）
+    const baseCn = getBaseChinese(w);
+
     h += `
     <div class="detail-card">
-      <div class="detail-top">
-        <span class="detail-word">${w.word}</span>
-        <button class="speak-btn" onclick="speak('${w.word}')" title="唸出來">🔊</button>
-        <span class="detail-cn">${w.cn}</span>
+      <div style="text-align:center;margin:8px 0 4px;">
+        <span style="font-size:1.3rem;font-weight:700;color:var(--blue);">${w.base}</span>
+        <span style="font-size:0.75rem;color:var(--dim);">(${baseCn})</span>
+        <span style="font-size:1.3rem;font-weight:700;color:var(--gold);margin:0 4px;">+ ?</span>
+        <span style="font-size:1.3rem;font-weight:700;color:var(--dim);">→</span>
+        <span style="font-size:1.3rem;font-weight:700;color:var(--text);margin-left:4px;">${w.cn}</span>
+        <button class="speak-btn" onclick="speak('${w.base}')" title="唸 ${w.base}" style="margin-left:8px;vertical-align:middle;">🔊</button>
       </div>
-      <div class="block-row">
-        <span class="blk blk-base">${w.split[0]}</span>
-        <span class="blk blk-op">+</span>
-        <span class="blk blk-suffix">${w.split[1]}</span>
-        <span class="blk blk-op">=</span>
-        <span class="blk blk-result">${w.word}</span>
-      </div>
-      <div style="text-align:center;font-size:0.68rem;color:var(--dim);margin-bottom:8px;">
-        ${r.emoji} ${r.formula}
-      </div>
-      <div style="text-align:center;font-size:0.7rem;color:var(--dim);margin-bottom:6px;">
-        🧪 ${w.base} 要加什麼變成 ${w.word}？
+      <div style="text-align:center;font-size:0.7rem;color:var(--dim);margin:6px 0 8px;">
+        🧪 加什麼後綴變成「${w.cn}」？
       </div>
       <div class="quiz-row">${opts.map(o => {
         let cls = 'quiz-opt';
@@ -479,6 +496,16 @@ function renderContent() {
       }).join('')}</div>
       ${answered ? `<div style="text-align:center;margin-top:8px;font-size:0.72rem;color:${answered===w.split[1]?'var(--green)':'var(--red)'};">
         ${answered===w.split[1]?'✅ 正確！':'❌ 正確答案：'+w.split[1]}
+      </div>
+      <div class="block-row">
+        <span class="blk blk-base">${w.split[0]}</span>
+        <span class="blk blk-op">+</span>
+        <span class="blk blk-suffix">${w.split[1]}</span>
+        <span class="blk blk-op">=</span>
+        <span class="blk blk-result">${w.word}</span>
+      </div>
+      <div style="text-align:center;font-size:0.68rem;color:var(--dim);">
+        ${r.emoji} ${r.formula}
       </div>` : ''}
     </div>`;
   }
@@ -519,6 +546,9 @@ function shuffle(arr) {
 // ═══════════════════════════════════════
 loadUserData();
 render();
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>

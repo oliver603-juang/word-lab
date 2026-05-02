@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="單字積木">
+<meta name="theme-color" content="#0f1923">
+<title>Word Lab 單字積木</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1923; --card: #162231; --border: #243447;
+  --gold: #f0c040; --accent: #e05070;
+  --blue: #3d9be9; --red: #ef5350; --green: #4caf50;
+  --teal: #26a69a; --purple: #9c6ade; --orange: #f5a623;
+  --text: #e4e8ec; --dim: #7a8fa0; --muted: #4a5e70;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Fredoka', sans-serif; background: var(--bg);
+  color: var(--text); min-height: 100dvh; overflow-x: hidden;
+  user-select: text; -webkit-user-select: text;
+}
+
+.top-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; position: sticky; top: 0;
+  background: var(--bg); z-index: 100;
+  border-bottom: 1px solid var(--border);
+}
+.user-btn {
+  padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+  background: transparent; color: var(--dim); font-family: inherit;
+  font-size: 0.7rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.user-btn.active {
+  background: var(--gold); color: #1a1a2e;
+  border-color: var(--gold); font-weight: 700;
+}
+.score-badge {
+  margin-left: auto; padding: 5px 14px; border-radius: 14px;
+  background: var(--green); color: white; font-size: 0.72rem; font-weight: 700;
+}
+
+.rule-tabs {
+  display: flex; gap: 6px; padding: 6px 12px; overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.rule-tabs::-webkit-scrollbar { display: none; }
+.rule-tab {
+  flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--dim); font-family: inherit; font-size: 0.68rem;
+  font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: all 0.2s;
+}
+.rule-tab.active {
+  background: var(--gold); color: #1a1a2e;
+  border-color: var(--gold); transform: scale(1.05);
+}
+
+.content { padding: 10px 12px 80px; }
+
+.rule-card {
+  background: var(--card); border-radius: 16px;
+  border: 1px solid var(--border); padding: 14px; margin-bottom: 10px;
+}
+.rule-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.rule-emoji { font-size: 1.6rem; }
+.rule-info .rule-name { font-size: 0.95rem; font-weight: 700; }
+.rule-formula-tag {
+  font-size: 0.68rem; color: var(--gold);
+  background: rgba(240,192,64,0.1); padding: 3px 10px;
+  border-radius: 8px; display: inline-block; margin-top: 3px;
+}
+
+.comic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 10px 0; }
+.comic-panel {
+  border-radius: 10px; padding: 10px 8px; text-align: center;
+  position: relative; min-height: 68px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.panel-num {
+  position: absolute; top: 4px; left: 7px;
+  font-size: 0.5rem; font-weight: 700; opacity: 0.4;
+}
+.panel-emoji { font-size: 1.4rem; margin-bottom: 3px; }
+.panel-text { font-size: 0.68rem; font-weight: 600; line-height: 1.3; color: rgba(0,0,0,0.7); }
+.comic-formula-text {
+  text-align: center; font-size: 0.68rem; font-weight: 700;
+  color: var(--dim); padding: 4px 0;
+}
+
+.blindspot-box {
+  background: rgba(255,255,255,0.02); border-radius: 10px;
+  padding: 10px; margin-top: 8px;
+}
+.bs-label { font-size: 0.62rem; color: var(--gold); font-weight: 600; margin-bottom: 4px; }
+.bs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.bs-cn, .bs-en { font-size: 0.65rem; line-height: 1.4; padding: 6px; border-radius: 8px; }
+.bs-cn { background: rgba(224,80,112,0.08); }
+.bs-en { background: rgba(61,155,233,0.08); }
+.bs-cn b, .bs-en b { font-size: 0.58rem; display: block; margin-bottom: 2px; }
+
+.section-label {
+  font-size: 0.75rem; font-weight: 700; color: var(--dim);
+  margin: 14px 0 6px; padding-left: 8px;
+  border-left: 3px solid var(--gold);
+}
+
+.word-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.word-chip {
+  padding: 6px 12px; border-radius: 12px; background: var(--card);
+  border: 1.5px solid var(--border); font-family: inherit; font-size: 0.7rem;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.word-chip:hover { transform: scale(1.04); border-color: var(--muted); }
+.word-chip.active { border-color: var(--gold); background: rgba(240,192,64,0.08); box-shadow: 0 0 10px rgba(240,192,64,0.15); }
+.chip-base { color: var(--blue); }
+.chip-suffix { color: var(--accent); }
+.chip-cn { font-size: 0.58rem; color: var(--dim); margin-left: 4px; }
+
+.detail-card {
+  background: rgba(240,192,64,0.04); border: 1px solid rgba(240,192,64,0.12);
+  border-radius: 14px; padding: 14px; margin-top: 10px;
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.detail-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.detail-word { font-size: 1.2rem; font-weight: 700; }
+.detail-cn { font-size: 0.78rem; color: var(--dim); }
+.speak-btn {
+  background: none; border: 1px solid var(--gold); border-radius: 50%;
+  width: 30px; height: 30px; font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.speak-btn:active { transform: scale(0.88); }
+
+.block-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; margin: 14px 0;
+}
+.blk {
+  padding: 8px 16px; border-radius: 10px;
+  font-size: 1rem; font-weight: 700; color: white;
+}
+.blk-base { background: var(--blue); }
+.blk-op { font-size: 1.2rem; color: var(--gold); background: none; padding: 0; }
+.blk-suffix { background: var(--accent); }
+.blk-result { background: var(--green); }
+
+.quiz-row {
+  display: flex; gap: 6px; justify-content: center; margin-top: 10px; flex-wrap: wrap;
+}
+.quiz-opt {
+  padding: 8px 18px; border-radius: 12px; border: 1.5px solid var(--border);
+  background: var(--card); color: var(--text); font-family: inherit;
+  font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.quiz-opt:hover { border-color: var(--muted); }
+.quiz-opt.correct { border-color: var(--green); background: rgba(76,175,80,0.15); color: var(--green); }
+.quiz-opt.wrong { border-color: var(--red); background: rgba(239,83,80,0.1); color: var(--red); }
+
+.progress-row {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 12px; flex-wrap: wrap;
+}
+.pill {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1.5px solid var(--border); background: transparent;
+  font-size: 0.55rem; font-weight: 700; color: var(--dim);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.pill.done { border-color: var(--green); color: var(--green); background: rgba(76,175,80,0.1); }
+.pill.current { border-color: var(--gold); color: var(--gold); }
+.progress-label { margin-left: auto; font-size: 0.65rem; color: var(--dim); }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="user-btn active" id="btn-iggy" onclick="switchUser('iggy')">🦊 Iggy</button>
+  <button class="user-btn" id="btn-yoyo" onclick="switchUser('yoyo')">🐸 Yoyo</button>
+  <div class="score-badge" id="score-badge">0 分</div>
+</div>
+
+<div class="rule-tabs" id="rule-tabs"></div>
+<div class="content" id="content"></div>
+<div class="progress-row" id="progress-row"></div>
+
+<script>
+// ═══════════════════════════════════════
+// DATA: 5 Rules × Sample Words
+// ═══════════════════════════════════════
+const RULES = [
+  {
+    id:'r_er', emoji:'👤', name:'身分標籤 -er', suffix:'er', suffixDisplay:'-er',
+    formula:'動作 + er = 做這件事的人',
+    comic:{ title:'👤 身分標籤',
+      panels:[
+        {emoji:'🏃',text:'teach 在教書',color:'#b8d4a8',border:'#7ba36a'},
+        {emoji:'🏷️',text:'背後貼上 +er',color:'#a8c8d4',border:'#6a9ab3'},
+        {emoji:'🧑‍🏫',text:'變成 teacher！',color:'#d4b8a8',border:'#b38a6a'},
+        {emoji:'✅',text:'動作+er = 職業',color:'#c8d4a8',border:'#9ab36a'}
+      ], formula:'🏃 動作 + 🏷️ er = 🧑‍🏫 人'
+    },
+    blindspot:{cn:'中文：教→老師（完全換字）',en:'英文：teach→teach+er（加標籤）'},
+    words:[
+      {word:'teacher',base:'teach',cn:'老師',split:['teach','er']},
+      {word:'singer',base:'sing',cn:'歌手',split:['sing','er']},
+      {word:'player',base:'play',cn:'玩家',split:['play','er']},
+      {word:'worker',base:'work',cn:'工人',split:['work','er']},
+      {word:'farmer',base:'farm',cn:'農夫',split:['farm','er']},
+      {word:'dancer',base:'dance',cn:'舞者',split:['danc','er']},
+      {word:'driver',base:'drive',cn:'司機',split:['driv','er']},
+      {word:'reader',base:'read',cn:'讀者',split:['read','er']},
+      {word:'leader',base:'lead',cn:'領導者',split:['lead','er']},
+      {word:'winner',base:'win',cn:'贏家',split:['winn','er']}
+    ]
+  },
+  {
+    id:'r_ful', emoji:'🧩', name:'充滿能量 -ful', suffix:'ful', suffixDisplay:'-ful',
+    formula:'東西 + ful = 充滿…的',
+    comic:{ title:'🧩 充滿能量',
+      panels:[
+        {emoji:'💡',text:'help 幫忙',color:'#d4c8a8',border:'#b3a06a'},
+        {emoji:'⛽',text:'倒入滿滿 +ful',color:'#a8d4c8',border:'#6ab3a0'},
+        {emoji:'💪',text:'helpful 超有用！',color:'#d4a8b8',border:'#b36a8a'},
+        {emoji:'✅',text:'東西+ful = 滿滿的',color:'#a8b8d4',border:'#6a8ab3'}
+      ], formula:'💡 東西 + ⛽ ful = 💪 充滿的'
+    },
+    blindspot:{cn:'中文：幫助→有幫助的（加三個字）',en:'英文：help→help+ful（一招搞定）'},
+    words:[
+      {word:'helpful',base:'help',cn:'有幫助的',split:['help','ful']},
+      {word:'useful',base:'use',cn:'有用的',split:['use','ful']},
+      {word:'beautiful',base:'beauty',cn:'美麗的',split:['beauti','ful']},
+      {word:'careful',base:'care',cn:'小心的',split:['care','ful']},
+      {word:'wonderful',base:'wonder',cn:'很棒的',split:['wonder','ful']},
+      {word:'colorful',base:'color',cn:'多彩的',split:['color','ful']},
+      {word:'thankful',base:'thank',cn:'感恩的',split:['thank','ful']},
+      {word:'powerful',base:'power',cn:'強大的',split:['power','ful']}
+    ]
+  },
+  {
+    id:'r_ly', emoji:'🎭', name:'動作膠水 -ly', suffix:'ly', suffixDisplay:'-ly',
+    formula:'形容詞 + ly = 怎麼做',
+    comic:{ title:'🎭 動作膠水',
+      panels:[
+        {emoji:'🐢',text:'slow 慢慢的',color:'#b8d4a8',border:'#7ba36a'},
+        {emoji:'🧴',text:'擠出 +ly 膠水',color:'#d4b8d4',border:'#b37ab3'},
+        {emoji:'🚶',text:'slowly 慢慢走',color:'#a8c8d4',border:'#6a9ab3'},
+        {emoji:'✅',text:'形容詞+ly = 怎麼做',color:'#d4d4a8',border:'#b3b36a'}
+      ], formula:'🐢 形容詞 + 🧴 ly = 🚶 怎麼做'
+    },
+    blindspot:{cn:'中文：慢→慢慢地（加「地」）',en:'英文：slow→slow+ly（加膠水）'},
+    words:[
+      {word:'slowly',base:'slow',cn:'慢慢地',split:['slow','ly']},
+      {word:'quickly',base:'quick',cn:'快速地',split:['quick','ly']},
+      {word:'happily',base:'happy',cn:'開心地',split:['happi','ly']},
+      {word:'sadly',base:'sad',cn:'難過地',split:['sad','ly']},
+      {word:'loudly',base:'loud',cn:'大聲地',split:['loud','ly']},
+      {word:'finally',base:'final',cn:'最後',split:['final','ly']},
+      {word:'really',base:'real',cn:'真的',split:['real','ly']},
+      {word:'usually',base:'usual',cn:'通常',split:['usual','ly']}
+    ]
+  },
+  {
+    id:'r_y', emoji:'🌧️', name:'天氣變身 -y', suffix:'y', suffixDisplay:'-y',
+    formula:'東西 + y = 很多…的',
+    comic:{ title:'🌧️ 天氣變身',
+      panels:[
+        {emoji:'☁️',text:'cloud 一朵雲',color:'#c8d4e0',border:'#8aa0b8'},
+        {emoji:'🦶',text:'雲長出 +y 小腳',color:'#d4c8e0',border:'#a088b8'},
+        {emoji:'🌤️',text:'cloudy 多雲天！',color:'#e0d4c8',border:'#b8a088'},
+        {emoji:'✅',text:'東西+y = 天氣感',color:'#c8e0d4',border:'#88b8a0'}
+      ], formula:'☁️ 東西 + 🦶 y = 🌤️ 感覺'
+    },
+    blindspot:{cn:'中文：雨→下雨的（加很多字）',en:'英文：rain→rain+y（一個 y！）'},
+    words:[
+      {word:'rainy',base:'rain',cn:'下雨的',split:['rain','y']},
+      {word:'sunny',base:'sun',cn:'晴朗的',split:['sunn','y']},
+      {word:'windy',base:'wind',cn:'有風的',split:['wind','y']},
+      {word:'snowy',base:'snow',cn:'下雪的',split:['snow','y']},
+      {word:'cloudy',base:'cloud',cn:'多雲的',split:['cloud','y']},
+      {word:'dirty',base:'dirt',cn:'髒的',split:['dirt','y']},
+      {word:'lucky',base:'luck',cn:'幸運的',split:['luck','y']},
+      {word:'hungry',base:'hunger',cn:'餓的',split:['hungr','y']}
+    ]
+  },
+  {
+    id:'r_tion', emoji:'📦', name:'事情包裝 -tion', suffix:'tion', suffixDisplay:'-tion/-ing',
+    formula:'動作 + tion/ing = 一件事',
+    comic:{ title:'📦 事情包裝',
+      panels:[
+        {emoji:'🎬',text:'act 演戲動作',color:'#d4a8a8',border:'#b36a6a'},
+        {emoji:'📦',text:'用 +tion 包裝',color:'#a8d4a8',border:'#6ab36a'},
+        {emoji:'🎭',text:'action 一件事！',color:'#a8a8d4',border:'#6a6ab3'},
+        {emoji:'✅',text:'動作→事情（名詞）',color:'#d4d4a8',border:'#b3b36a'}
+      ], formula:'🎬 動作 + 📦 tion = 🎭 事情'
+    },
+    blindspot:{cn:'中文：教→教育（完全換字）',en:'英文：educate→educa+tion（砍尾加包裝）'},
+    words:[
+      {word:'action',base:'act',cn:'行動',split:['ac','tion']},
+      {word:'education',base:'educate',cn:'教育',split:['educa','tion']},
+      {word:'question',base:'quest',cn:'問題',split:['ques','tion']},
+      {word:'vacation',base:'vacate',cn:'假期',split:['vaca','tion']},
+      {word:'reading',base:'read',cn:'閱讀',split:['read','ing']},
+      {word:'swimming',base:'swim',cn:'游泳',split:['swimm','ing']},
+      {word:'painting',base:'paint',cn:'繪畫',split:['paint','ing']},
+      {word:'building',base:'build',cn:'建築',split:['build','ing']}
+    ]
+  }
+];
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let currentUser = 'iggy';
+let currentRuleIdx = 0;
+let selectedWordIdx = -1;
+let totalScore = 0;
+let progress = {};
+let quizAnswered = {};
+
+// ═══════════════════════════════════════
+// USER DATA
+// ═══════════════════════════════════════
+function loadUserData() {
+  currentUser = localStorage.getItem('wl-user') || 'iggy';
+  totalScore = parseInt(localStorage.getItem('wl-'+currentUser+'-score') || '0');
+  progress = JSON.parse(localStorage.getItem('wl-'+currentUser+'-progress') || '{}');
+  quizAnswered = JSON.parse(localStorage.getItem('wl-'+currentUser+'-quiz') || '{}');
+  document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-'+currentUser)?.classList.add('active');
+  updateScore();
+}
+
+function saveUserData() {
+  localStorage.setItem('wl-user', currentUser);
+  localStorage.setItem('wl-'+currentUser+'-score', totalScore);
+  localStorage.setItem('wl-'+currentUser+'-progress', JSON.stringify(progress));
+  localStorage.setItem('wl-'+currentUser+'-quiz', JSON.stringify(quizAnswered));
+}
+
+function switchUser(uid) {
+  currentUser = uid;
+  localStorage.setItem('wl-user', uid);
+  loadUserData();
+  selectedWordIdx = -1;
+  render();
+}
+
+function updateScore() {
+  document.getElementById('score-badge').textContent = totalScore + ' 分';
+}
+
+// ═══════════════════════════════════════
+// SPEAK
+// ═══════════════════════════════════════
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = 0.8; u.pitch = 1.1;
+  speechSynthesis.speak(u);
+}
+
+// ═══════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════
+function handleQuiz(wordKey, chosen, correct) {
+  if (quizAnswered[wordKey]) return;
+  quizAnswered[wordKey] = chosen;
+  const isCorrect = chosen === correct;
+  if (isCorrect) {
+    totalScore += 5;
+    progress[wordKey] = 'correct';
+  } else {
+    progress[wordKey] = 'wrong';
+  }
+  saveUserData();
+  updateScore();
+  renderContent();
+  renderProgress();
+}
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+function render() {
+  renderTabs();
+  renderContent();
+  renderProgress();
+}
+
+function renderTabs() {
+  document.getElementById('rule-tabs').innerHTML = RULES.map((r, i) =>
+    `<button class="rule-tab${i===currentRuleIdx?' active':''}" onclick="currentRuleIdx=${i};selectedWordIdx=-1;render();">${r.emoji} ${r.suffixDisplay}</button>`
+  ).join('');
+}
+
+function renderContent() {
+  const r = RULES[currentRuleIdx];
+  const c = r.comic;
+  let h = `
+  <div class="rule-card">
+    <div class="rule-header">
+      <span class="rule-emoji">${r.emoji}</span>
+      <div class="rule-info">
+        <div class="rule-name">${r.name}</div>
+        <span class="rule-formula-tag">${r.formula}</span>
+      </div>
+    </div>
+    <div class="comic-grid">${c.panels.map((p,i)=>`
+      <div class="comic-panel" style="background:${p.color};border:1px solid ${p.border}">
+        <div class="panel-num">${i+1}</div>
+        <div class="panel-emoji">${p.emoji}</div>
+        <div class="panel-text">${p.text}</div>
+      </div>`).join('')}
+    </div>
+    <div class="comic-formula-text">${c.formula}</div>
+    <div class="blindspot-box">
+      <div class="bs-label">💡 中英文思維差異</div>
+      <div class="bs-grid">
+        <div class="bs-cn"><b>🇹🇼 中文</b>${r.blindspot.cn}</div>
+        <div class="bs-en"><b>🇺🇸 英文</b>${r.blindspot.en}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">📚 單字家族（${r.words.length} 字）— 點擊拆解</div>
+  <div class="word-grid">${r.words.map((w,i)=>{
+    const s = w.split;
+    const isActive = i === selectedWordIdx;
+    return `<button class="word-chip${isActive?' active':''}" onclick="selectedWordIdx=${i};renderContent();renderProgress();">
+      <span class="chip-base">${s[0]}</span><span class="chip-suffix">${s[1]}</span>
+      <span class="chip-cn">${w.cn}</span>
+    </button>`;
+  }).join('')}</div>`;
+
+  if (selectedWordIdx >= 0) {
+    const w = r.words[selectedWordIdx];
+    const wKey = r.id + '_' + w.word;
+    const answered = quizAnswered[wKey];
+    const wrongOpts = getDistractors(r, selectedWordIdx);
+    const opts = shuffle([w.split[1], ...wrongOpts]);
+
+    h += `
+    <div class="detail-card">
+      <div class="detail-top">
+        <span class="detail-word">${w.word}</span>
+        <button class="speak-btn" onclick="speak('${w.word}')" title="唸出來">🔊</button>
+        <span class="detail-cn">${w.cn}</span>
+      </div>
+      <div class="block-row">
+        <span class="blk blk-base">${w.split[0]}</span>
+        <span class="blk blk-op">+</span>
+        <span class="blk blk-suffix">${w.split[1]}</span>
+        <span class="blk blk-op">=</span>
+        <span class="blk blk-result">${w.word}</span>
+      </div>
+      <div style="text-align:center;font-size:0.68rem;color:var(--dim);margin-bottom:8px;">
+        ${r.emoji} ${r.formula}
+      </div>
+      <div style="text-align:center;font-size:0.7rem;color:var(--dim);margin-bottom:6px;">
+        🧪 ${w.base} 要加什麼變成 ${w.word}？
+      </div>
+      <div class="quiz-row">${opts.map(o => {
+        let cls = 'quiz-opt';
+        if (answered) {
+          if (o === w.split[1]) cls += ' correct';
+          else if (o === answered && o !== w.split[1]) cls += ' wrong';
+        }
+        return `<button class="${cls}" onclick="handleQuiz('${wKey}','${o}','${w.split[1]}')"${answered?' disabled':''}>${o}</button>`;
+      }).join('')}</div>
+      ${answered ? `<div style="text-align:center;margin-top:8px;font-size:0.72rem;color:${answered===w.split[1]?'var(--green)':'var(--red)'};">
+        ${answered===w.split[1]?'✅ 正確！':'❌ 正確答案：'+w.split[1]}
+      </div>` : ''}
+    </div>`;
+  }
+
+  document.getElementById('content').innerHTML = h;
+}
+
+function renderProgress() {
+  const r = RULES[currentRuleIdx];
+  const doneCount = r.words.filter(w => progress[r.id+'_'+w.word] === 'correct').length;
+  document.getElementById('progress-row').innerHTML = r.words.map((w,i) => {
+    const key = r.id+'_'+w.word;
+    const done = progress[key] === 'correct';
+    const cur = i === selectedWordIdx;
+    return `<button class="pill${done?' done':''}${cur?' current':''}" onclick="selectedWordIdx=${i};renderContent();renderProgress();">${i+1}</button>`;
+  }).join('') + `<span class="progress-label">${doneCount}/${r.words.length}</span>`;
+}
+
+function getDistractors(rule, idx) {
+  const allSuffixes = ['er','ful','ly','y','tion','ing','ness','able','ment','less'];
+  const correct = rule.words[idx].split[1];
+  const pool = allSuffixes.filter(s => s !== correct);
+  const shuffled = pool.sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 2);
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+loadUserData();
+render();
+</script>
+</body>
+</html>
